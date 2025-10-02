@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Battle</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="setup" class="panel">
+    <div id="lang-select">
+      <button data-lang="en">English</button>
+      <button data-lang="ru">Русский</button>
+    </div>
+    <div id="upload-section" class="hidden">
+      <div class="upload-row">
+        <label class="avatar-upload">
+          <input type="file" accept="image/*" id="img1" hidden>
+          <div class="preview" id="preview1"></div>
+          <span class="upload-label" id="label1">Choose 1</span>
+        </label>
+        <label class="avatar-upload">
+          <input type="file" accept="image/*" id="img2" hidden>
+          <div class="preview" id="preview2"></div>
+          <span class="upload-label" id="label2">Choose 2</span>
+        </label>
+      </div>
+      <div class="names-row hidden" id="names-row">
+        <input type="text" id="name1" maxlength="12" placeholder="Name 1">
+        <input type="text" id="name2" maxlength="12" placeholder="Name 2">
+      </div>
+      <button id="start-btn" class="start-btn hidden">Start Battle</button>
+    </div>
+  </div>
+  <div id="battle-ui" class="hidden">
+    <div id="hp-bars">
+      <div class="hp-bar-wrap">
+        <span class="player-name" id="name1-ui"></span>
+        <div class="hp-bar" id="hp1"></div>
+      </div>
+      <div class="hp-bar-wrap">
+        <span class="player-name" id="name2-ui"></span>
+        <div class="hp-bar" id="hp2"></div>
+      </div>
+      <div id="battle-timer"></div>
+    </div>
+    <div id="game-wrap">
+      <canvas id="game"></canvas>
+      <div id="countdown" class="hidden"></div>
+      <div id="winner" class="hidden"></div>
+    </div>
+  </div>
+  <audio id="audio-bounce" src="sounds/bounce.mp3"></audio>
+  <audio id="audio-hit" src="sounds/hit.mp3"></audio>
+  <audio id="audio-heal" src="sounds/heal.mp3"></audio>
+  <audio id="audio-spike" src="sounds/spike.mp3"></audio>
+  <script src="https://cdn.jsdelivr.net/npm/tween.js@18.6.4/dist/tween.umd.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
