@@ -155,15 +155,17 @@ function setHP(idx, hp) {
 
 // ==== CANVAS SIZE ====
 function resizeCanvas() {
-  // Ограничения: max 94vw и max 48vh, aspect 1:1.12
-  let maxW = Math.min(window.innerWidth * 0.94, 440);
-  let maxH = Math.min(window.innerHeight * 0.48, 520);
-  let aspect = 1.12;
-  let w = maxW, h = w * aspect;
-  if (h > maxH) {
-    h = maxH;
-    w = h / aspect;
+  // Для мобильных: ширина 95vw, aspect 1:1.1, но не выше 50vh
+  let screenW = window.innerWidth;
+  let screenH = window.innerHeight;
+  let w = Math.min(screenW * 0.95, 440);
+  let h = w * 1.1;
+
+  if (h > screenH * 0.5) {
+    h = screenH * 0.5;
+    w = h / 1.1;
   }
+
   canvas.width = w * window.devicePixelRatio;
   canvas.height = h * window.devicePixelRatio;
   canvas.style.width = w + "px";
