@@ -107,7 +107,7 @@ langBtns.forEach(btn => {
   }
 });
 
-// Avatar image upload
+// Avatar image upload (без двойного нажатия)
 imgInputs.forEach((input, idx) => {
   input.onchange = () => {
     const file = input.files[0];
@@ -122,7 +122,7 @@ imgInputs.forEach((input, idx) => {
     };
     reader.readAsDataURL(file);
   };
-  // Важно: не нужен обработчик клика на preview/label, label сам по себе вызывает input.
+  // Не нужно кликать на preview или label — работает через label по стандарту!
 });
 
 function checkAvatars() {
@@ -136,16 +136,12 @@ function checkAvatars() {
 startBtn.onclick = () => {
   setupPanel.classList.add("hidden");
   battleUI.classList.remove("hidden");
-  // Names
   playerNames[0] = nameInputs[0].value.trim() || l.name1;
   playerNames[1] = nameInputs[1].value.trim() || l.name2;
   nameUIs[0].textContent = playerNames[0];
   nameUIs[1].textContent = playerNames[1];
-  // Reset HP
-  setHP(0, 5); setHP(1, 5);
-  // Reset timer UI
+  setHP(0, HP_MAX); setHP(1, HP_MAX);
   battleTimer.textContent = `${l.time}: 0:00`;
-  // Start VS intro and countdown
   setTimeout(() => showVSIntro(), 400);
   setTimeout(resizeCanvas, 100);
 };
@@ -160,9 +156,15 @@ function setHP(idx, hp) {
 
 // ==== CANVAS SIZE ====
 function resizeCanvas() {
-  // Field: max 94vw, aspect 1:1.4, min padding for HP
-  const w = Math.min(window.innerWidth * 0.94, 440);
-  const h = w * 1.4;
+  // Ограничения для мобильного: max 95vw и max 58vh, aspect 1:1.22
+  let maxW = Math.min(window.innerWidth * 0.95, 440);
+  let maxH = Math.min(window.innerHeight * 0.58, 670);
+  let aspect = 1.22;
+  let w = maxW, h = w * aspect;
+  if (h > maxH) {
+    h = maxH;
+    w = h / aspect;
+  }
   canvas.width = w * window.devicePixelRatio;
   canvas.height = h * window.devicePixelRatio;
   canvas.style.width = w + "px";
@@ -258,7 +260,7 @@ function createGameState() {
       spike: false, spikeAnim: 0, shake:0
     }
   ];
-  function randV() { return (Math.random()-0.5)*2.8 + (Math.random()>0.5?2.2:-2.2); }
+  function randV() { return (Math.random()-0.5)*5 + (Math.random()>0.5?2.2:-2.2); }
   const state = {
     w, h,
     players,
@@ -299,7 +301,6 @@ function loop() {
 function updateGame() {
   const g = game;
   g.t++;
-  // Physics & movement
   g.players.forEach((p,i) => {
     p.x += p.vx;
     p.y += p.vy;
@@ -323,7 +324,6 @@ function updateGame() {
     if (p.shake>0) p.shake--;
   });
 
-  // Player collision
   let p1= g.players[0], p2=g.players[1];
   let dx=p2.x-p1.x,dy=p2.y-p1.y,dist=Math.hypot(dx,dy);
   if (dist<PLAYER_RAD*2) {
@@ -351,7 +351,6 @@ function updateGame() {
     }
   }
 
-  // Items
   g.items.forEach((item, idx) => {
     if (item.t<10) item.t++;
     g.players.forEach((p,i) => {
@@ -373,14 +372,12 @@ function updateGame() {
   // Подсчёт текущих не собранных пил:
   const spikesOnField = g.items.filter(item => item.type==="spike" && !item.gone).length;
 
-  // New heal item spawn (очень редко)
   if (!game.finished && --g.healDelay<=0) {
     let x = FIELD_MARGIN+PLAYER_RAD+ITEM_SIZE/2+Math.random()*(g.w-2*(FIELD_MARGIN+PLAYER_RAD+ITEM_SIZE/2));
     let y = FIELD_MARGIN+PLAYER_RAD+ITEM_SIZE/2+Math.random()*(g.h-2*(FIELD_MARGIN+PLAYER_RAD+ITEM_SIZE/2));
     g.items.push({type:"heal",x,y,t:0});
     g.healDelay = randomHealDelay();
   }
-  // New spike item spawn (очень часто, но не больше 3 на поле!)
   if (!game.finished && spikesOnField < SPIKE_MAX_ON_FIELD && --g.spikeDelay<=0) {
     let x = FIELD_MARGIN+PLAYER_RAD+ITEM_SIZE/2+Math.random()*(g.w-2*(FIELD_MARGIN+PLAYER_RAD+ITEM_SIZE/2));
     let y = FIELD_MARGIN+PLAYER_RAD+ITEM_SIZE/2+Math.random()*(g.h-2*(FIELD_MARGIN+PLAYER_RAD+ITEM_SIZE/2));
@@ -399,18 +396,15 @@ function playSound(key) {
   el.currentTime = 0; el.play();
 }
 
-// ==== DRAWING ====
 function drawGame() {
   const g = game, w=g.w, h=g.h;
   ctx.clearRect(0,0,w,h);
-  // Field
   ctx.save();
   ctx.strokeStyle = FIELD_COLOR; ctx.lineWidth=5;
   ctx.shadowColor = "#4ae7"; ctx.shadowBlur=16;
   roundRect(ctx, FIELD_MARGIN/2, FIELD_MARGIN/2, w-FIELD_MARGIN, h-FIELD_MARGIN, 28);
   ctx.stroke();
   ctx.restore();
-  // Items
   g.items.forEach(item=>{
     if (item.t<10) {
       ctx.save();
@@ -434,7 +428,6 @@ function drawGame() {
       item.t++;
     }
   });
-  // Players
   g.players.forEach((p,i)=>{
     ctx.save();
     if (p.shake>0) {
@@ -500,7 +493,6 @@ function drawItem(type) {
     ctx.stroke();
     ctx.restore();
   } else if (type=="spike") {
-    // Новый значок: круглая пила с зубцами и голубым центром
     ctx.save();
     let N = 12, r1 = ITEM_SIZE/2-5, r2 = ITEM_SIZE/2-2;
     for(let i=0;i<N;i++){
