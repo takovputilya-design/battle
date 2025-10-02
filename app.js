@@ -98,7 +98,6 @@ langBtns.forEach(btn => {
     langBtns.forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     uploadSection.classList.remove("hidden");
-    // Update labels:
     nameInputs[0].placeholder = l.name1;
     nameInputs[1].placeholder = l.name2;
     uploadLabels[0].textContent = l.upload1;
@@ -156,10 +155,10 @@ function setHP(idx, hp) {
 
 // ==== CANVAS SIZE ====
 function resizeCanvas() {
-  // Ограничения для мобильного: max 95vw и max 58vh, aspect 1:1.22
-  let maxW = Math.min(window.innerWidth * 0.95, 440);
-  let maxH = Math.min(window.innerHeight * 0.58, 670);
-  let aspect = 1.22;
+  // Ограничения: max 94vw и max 48vh, aspect 1:1.12
+  let maxW = Math.min(window.innerWidth * 0.94, 440);
+  let maxH = Math.min(window.innerHeight * 0.48, 520);
+  let aspect = 1.12;
   let w = maxW, h = w * aspect;
   if (h > maxH) {
     h = maxH;
@@ -233,7 +232,7 @@ function doRealBattleStart() {
 }
 
 // ==== GAMEPLAY LOGIC ====
-const PLAYER_RAD = 36; // Крупнее кружки!
+const PLAYER_RAD = 36;
 const FIELD_MARGIN = 24, ITEM_SIZE = 38;
 const FIELD_COLOR = "#4ae";
 const PLAYER_COLORS = ["#3ed680","#e44"];
@@ -241,12 +240,11 @@ const SPIKE_COLOR = "#5cf";
 const SPIKE_OUTLINE = "#166";
 const HP_MAX = 5;
 
-// Аптечки очень редко, шипы часто!
 const HEAL_ITEM_DELAY_MIN = 4800; // ~80 сек
 const HEAL_ITEM_DELAY_MAX = 6000; // ~100 сек
 const SPIKE_ITEM_DELAY_MIN = 120; // ~2 сек
 const SPIKE_ITEM_DELAY_MAX = 220; // ~3.7 сек
-const SPIKE_MAX_ON_FIELD = 3; // Максимум 3 пилы на поле
+const SPIKE_MAX_ON_FIELD = 3;
 
 function createGameState() {
   const w = canvas.width, h = canvas.height;
@@ -260,7 +258,7 @@ function createGameState() {
       spike: false, spikeAnim: 0, shake:0
     }
   ];
-  function randV() { return (Math.random()-0.5)*2.8 + (Math.random()>0.5?1.5:-1.8); }
+  function randV() { return (Math.random()-0.5)*2.8 + (Math.random()>0.5?2.2:-2.2); }
   const state = {
     w, h,
     players,
