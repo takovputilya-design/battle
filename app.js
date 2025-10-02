@@ -260,7 +260,7 @@ function createGameState() {
       spike: false, spikeAnim: 0, shake:0
     }
   ];
-  function randV() { return (Math.random()-0.5)*3 + (Math.random()>0.5?1.4:-1.7); }
+  function randV() { return (Math.random()-0.5)*2.8 + (Math.random()>0.5?1.5:-1.8); }
   const state = {
     w, h,
     players,
