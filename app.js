@@ -122,8 +122,7 @@ imgInputs.forEach((input, idx) => {
     };
     reader.readAsDataURL(file);
   };
-  previews[idx].onclick = () => imgInputs[idx].click();
-  uploadLabels[idx].onclick = () => imgInputs[idx].click();
+  // Важно: не нужен обработчик клика на preview/label, label сам по себе вызывает input.
 });
 
 function checkAvatars() {
@@ -152,9 +151,8 @@ startBtn.onclick = () => {
 };
 
 function setHP(idx, hp) {
-  // Отображаем 7 делений, закрашенных цветом
   let hearts = "";
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < HP_MAX; i++) {
     hearts += `<span class="hp-cell${i<hp?" filled":""}"></span>`;
   }
   hpBars[idx].innerHTML = `<div class="hp-bar-cells">${hearts}</div>`;
@@ -179,7 +177,6 @@ let animFrame = null;
 
 // ==== VS INTRO AND COUNTDOWN ====
 function showVSIntro() {
-  // Remove if already present
   if (vsIntroDiv && vsIntroDiv.parentNode) vsIntroDiv.parentNode.removeChild(vsIntroDiv);
   vsIntroDiv = document.createElement("div");
   vsIntroDiv.id = "vs-intro";
@@ -234,7 +231,7 @@ function doRealBattleStart() {
 }
 
 // ==== GAMEPLAY LOGIC ====
-const PLAYER_RAD = 36; // Было 28. Теперь кружки крупнее!
+const PLAYER_RAD = 36; // Крупнее кружки!
 const FIELD_MARGIN = 24, ITEM_SIZE = 38;
 const FIELD_COLOR = "#4ae";
 const PLAYER_COLORS = ["#3ed680","#e44"];
@@ -242,11 +239,13 @@ const SPIKE_COLOR = "#5cf";
 const SPIKE_OUTLINE = "#166";
 const HP_MAX = 5;
 
-// Аптечки очень редко, шипы чаще!
-const HEAL_ITEM_DELAY_MIN = 700; // ~80 сек
-const HEAL_ITEM_DELAY_MAX = 1400; // ~100 сек
-const SPIKE_ITEM_DELAY_MIN = 180; // ~3 сек
-const SPIKE_ITEM_DELAY_MAX = 340; // ~5.6 сек
+// Аптечки очень редко, шипы часто!
+const HEAL_ITEM_DELAY_MIN = 4800; // ~80 сек
+const HEAL_ITEM_DELAY_MAX = 6000; // ~100 сек
+const SPIKE_ITEM_DELAY_MIN = 120; // ~2 сек
+const SPIKE_ITEM_DELAY_MAX = 220; // ~3.7 сек
+const SPIKE_MAX_ON_FIELD = 3; // Максимум 3 пилы на поле
+
 function createGameState() {
   const w = canvas.width, h = canvas.height;
   let players = [
@@ -259,9 +258,8 @@ function createGameState() {
       spike: false, spikeAnim: 0, shake:0
     }
   ];
-  // Кружки двигаются быстрее:
-  function randV() { return (Math.random()-0.5)*3.5 + (Math.random()>0.5?2.2:-2.2); }
-  return {
+  function randV() { return (Math.random()-0.5)*2.8 + (Math.random()>0.5?2.2:-2.2); }
+  const state = {
     w, h,
     players,
     items: [],
@@ -271,6 +269,16 @@ function createGameState() {
     finished: false,
     winner: null,
   };
+
+  // Первый итем "spike" в центре
+  state.items.push({
+    type: "spike",
+    x: w / 2,
+    y: h / 2,
+    t: 0
+  });
+
+  return state;
 }
 
 function randomHealDelay() {
@@ -293,10 +301,8 @@ function updateGame() {
   g.t++;
   // Physics & movement
   g.players.forEach((p,i) => {
-    // Movement
     p.x += p.vx;
     p.y += p.vy;
-    // Wall bounce (без анимации shake!)
     if (p.x-PLAYER_RAD < FIELD_MARGIN) { 
       p.x = FIELD_MARGIN+PLAYER_RAD; p.vx*=-1;
       playSound("bounce");
@@ -321,7 +327,6 @@ function updateGame() {
   let p1= g.players[0], p2=g.players[1];
   let dx=p2.x-p1.x,dy=p2.y-p1.y,dist=Math.hypot(dx,dy);
   if (dist<PLAYER_RAD*2) {
-    // Bounce: billiard balls
     let angle = Math.atan2(dy,dx), overlap = PLAYER_RAD*2-dist+1;
     let nx = Math.cos(angle), ny = Math.sin(angle);
     p1.x -= nx*overlap/2; p1.y -= ny*overlap/2;
@@ -331,9 +336,7 @@ function updateGame() {
     let m1 = dot2, m2 = dot1;
     p1.vx += (m1-dot1)*nx; p1.vy += (m1-dot1)*ny;
     p2.vx += (m2-dot2)*nx; p2.vy += (m2-dot2)*ny;
-    // Встряска только при столкновении игроков
     triggerShake(0); triggerShake(1); playSound("bounce");
-    // Spike attack
     let hit = false;
     if (p1.spike) { p2.hp--; p1.spike=false; p1.spikeAnim=18; hit = true; }
     if (p2.spike) { p1.hp--; p2.spike=false; p2.spikeAnim=18; hit = true; }
@@ -342,7 +345,6 @@ function updateGame() {
       setHP(0, Math.max(0,p1.hp));
       setHP(1, Math.max(0,p2.hp));
     }
-    // End check
     if (p1.hp<=0 || p2.hp<=0) {
       game.finished = true;
       endBattle();
@@ -351,9 +353,7 @@ function updateGame() {
 
   // Items
   g.items.forEach((item, idx) => {
-    // Animate (appear)
     if (item.t<10) item.t++;
-    // Pickup
     g.players.forEach((p,i) => {
       let d = Math.hypot(p.x-item.x, p.y-item.y);
       if (d<PLAYER_RAD+ITEM_SIZE/2-8 && !item.gone) {
@@ -370,6 +370,9 @@ function updateGame() {
   });
   g.items = g.items.filter(item=>!item.gone || item.t<14);
 
+  // Подсчёт текущих не собранных пил:
+  const spikesOnField = g.items.filter(item => item.type==="spike" && !item.gone).length;
+
   // New heal item spawn (очень редко)
   if (!game.finished && --g.healDelay<=0) {
     let x = FIELD_MARGIN+PLAYER_RAD+ITEM_SIZE/2+Math.random()*(g.w-2*(FIELD_MARGIN+PLAYER_RAD+ITEM_SIZE/2));
@@ -377,8 +380,8 @@ function updateGame() {
     g.items.push({type:"heal",x,y,t:0});
     g.healDelay = randomHealDelay();
   }
-  // New spike item spawn (чуть чаще)
-  if (!game.finished && --g.spikeDelay<=0) {
+  // New spike item spawn (очень часто, но не больше 3 на поле!)
+  if (!game.finished && spikesOnField < SPIKE_MAX_ON_FIELD && --g.spikeDelay<=0) {
     let x = FIELD_MARGIN+PLAYER_RAD+ITEM_SIZE/2+Math.random()*(g.w-2*(FIELD_MARGIN+PLAYER_RAD+ITEM_SIZE/2));
     let y = FIELD_MARGIN+PLAYER_RAD+ITEM_SIZE/2+Math.random()*(g.h-2*(FIELD_MARGIN+PLAYER_RAD+ITEM_SIZE/2));
     g.items.push({type:"spike",x,y,t:0});
@@ -434,7 +437,6 @@ function drawGame() {
   // Players
   g.players.forEach((p,i)=>{
     ctx.save();
-    // Shake animation только при столкновении игроков!
     if (p.shake>0) {
       ctx.translate(Math.random()*6-3,Math.random()*6-3);
     }
@@ -447,7 +449,6 @@ function drawGame() {
     ctx.stroke();
     ctx.shadowBlur = 0;
     ctx.closePath();
-    // Draw img
     ctx.save();
     ctx.beginPath();
     ctx.arc(p.x,p.y,PLAYER_RAD,0,2*Math.PI);
@@ -456,11 +457,9 @@ function drawGame() {
     ctx.drawImage(p.img, p.x-PLAYER_RAD, p.y-PLAYER_RAD, PLAYER_RAD*2, PLAYER_RAD*2);
     ctx.restore();
 
-    // Spike effect только если p.spike или p.spikeAnim>0
     if (p.spike||p.spikeAnim>0) {
       drawSpikes(p.x,p.y,PLAYER_RAD,p.spikeAnim);
     }
-    // Hit flash
     if (p.spikeAnim>12) {
       ctx.save();
       ctx.globalAlpha = (p.spikeAnim-12)/12*0.6;
@@ -474,7 +473,6 @@ function drawGame() {
   });
 }
 
-// Helpers
 function roundRect(ctx,x,y,w,h,r){
   ctx.beginPath();
   ctx.moveTo(x+r,y);
@@ -485,10 +483,8 @@ function roundRect(ctx,x,y,w,h,r){
   ctx.closePath();
 }
 
-// Аптечка = сердце (canvas)
 function drawItem(type) {
   if (type=="heal") {
-    // 3D heart
     ctx.save();
     ctx.scale(1.1,1.1);
     ctx.beginPath();
