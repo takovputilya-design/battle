@@ -228,6 +228,7 @@ function escapeHTML(s) {
 
 function doRealBattleStart() {
   resetBattleTimer();
+  resizeCanvas(); // <--- добавлено!
   game = createGameState();
   winnerDiv.classList.add("hidden");
   loop();
@@ -397,6 +398,7 @@ function playSound(key) {
 }
 
 function drawGame() {
+  resizeCanvas(); // <--- добавлено!
   const g = game, w=g.w, h=g.h;
   ctx.clearRect(0,0,w,h);
   ctx.save();
